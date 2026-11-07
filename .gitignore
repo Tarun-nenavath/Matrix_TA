@@ -1,0 +1,11 @@
+.env
+
+__pycache__/
+*.pyc
+
+.vscode/
+.idea/
+
+release_*.tar.gz
+
+.trt_cache/

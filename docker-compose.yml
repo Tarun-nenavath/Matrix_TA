@@ -1,0 +1,91 @@
+services:
+
+  postgres:
+    image: postgres:15-alpine
+
+    env_file:
+      - .env
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+    ports:
+      - "5432:5432"
+
+    networks:
+      - sensor_backplane
+
+
+  inference_worker:
+    build: .
+
+    command:
+      - python
+      - inference_worker/worker.py
+
+    env_file:
+      - .env
+
+    environment:
+      ENGINE_PATH: ${ENGINE_PATH}
+      MANIFEST_PATH: ${MANIFEST_PATH}
+      WORKER_PORT: ${WORKER_PORT}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:9000/health"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+    networks:
+      - sensor_backplane
+      - edge_dmz
+
+
+  vision_api:
+    build: .
+
+    command:
+      - python
+      - vision_api/app.py
+
+    env_file:
+      - .env
+
+    environment:
+      APP_PORT: ${APP_PORT}
+      WORKER_URL: ${WORKER_URL}
+      DB_HOST: ${DB_HOST}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      inference_worker:
+        condition: service_healthy
+
+      postgres:
+        condition: service_started
+
+    networks:
+      - edge_dmz
+
+
+networks:
+
+  edge_dmz:
+    driver: bridge
+
+  sensor_backplane:
+    driver: bridge
+    internal: true
