@@ -1,4 +1,5 @@
 =====================NOTEBOOK======================
+
 Challenge Summary:
 Successfully fixed operational, networking, integrity validation and health monitoring issues in the EO/IR perception stack.
 
